@@ -140,12 +140,33 @@ class Bomb:
         self.rct.move_ip(self.vx, self.vy)
         screen.blit(self.img, self.rct)
 
+class Score:
+    """
+    スコアに関するクラス
+    """
+    def __init__(self):
+        self.fonto = pg.font.SysFont("hgp創英角ﾎﾟｯﾌﾟ体", 30)
+        self.color = (0, 0, 255)
+        self.score = 0
+        self.img = self.fonto.render(f"スコア:{self.score}", True, self.color)
+        self.rct = (100, HEIGHT - 50)
+
+    def update(self, screen:pg.Surface):
+        """
+        """
+        self.img = self.fonto.render(f"スコア:{self.score}", True, self.color)
+        screen.blit(self.img, self.rct)
+    
+    def increment(self, point = 1):
+        self.score += point
 
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))    
     bg_img = pg.image.load("fig/pg_bg.jpg")
     bird = Bird((300, 200))
+    score = Score()
+
     # bomb = Bomb((255, 0, 0), 10)
     # bombs= []
     # for _ in range(NUM_OF_BOMBS):
@@ -182,14 +203,15 @@ def main():
                     beam = None
                     bombs[i] = None
                     bird.change_img(6, screen)
+                    score.increment()
         bombs = [bomb for bomb in bombs if bomb is not None]
-
         key_lst = pg.key.get_pressed()
         bird.update(key_lst, screen)
         if beam is not None:
             beam.update(screen) 
         for  bomb in bombs: 
             bomb.update(screen)
+        score.update(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
