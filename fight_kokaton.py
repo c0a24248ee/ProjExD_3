@@ -224,7 +224,7 @@ def main():
     # bombs= []
     # for _ in range(NUM_OF_BOMBS):
     #     bombs.append(Bomb((255, 0, 0), 10))
-    bombs = [Bomb((255, 0, 0), 10) for _ in range(NUM_OF_BOMBS)] 
+    bombs = [Bomb((255, 0, 0), 10) for _ in range(NUM_OF_BOMBS)] #爆弾を複数生成してリストに格納
     beams = []  # 複数ビームに対応
     explosions = [] #爆発エフェク用リスト
     clock = pg.time.Clock()
@@ -233,10 +233,9 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return
-            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                # スペースキー押下でBeamクラスのインスタンス生成
+            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE: # スペースキーでビームを発射（Beamインスタンスを追加）
                 beams.append(Beam(bird))            
-        screen.blit(bg_img, [0, 0])
+        screen.blit(bg_img, [0, 0]) # 背景画像の描画
         
         # if bomb is not None:
         for bomb in bombs:
@@ -254,32 +253,32 @@ def main():
         for beam in beams:
             for i, bomb in enumerate(bombs):
                 if bomb is not None and beam.rct.colliderect(bomb.rct):
-                    explosions.append(Explosion(bomb.rct.center))
-                    beams[beams.index(beam)] = None
-                    bombs[i] = None
-                    bird.change_img(6, screen)
-                    score.increment()
+                    explosions.append(Explosion(bomb.rct.center)) # 爆発エフェクトを追加
+                    beams[beams.index(beam)] = None  # ビームを削除
+                    bombs[i] = None # 爆弾を削除
+                    bird.change_img(6, screen) # 撃破時のこうかとん画像に
+                    score.increment() # スコア加算
                     break
-        bombs = [bomb for bomb in bombs if bomb is not None]
-        explosions = [exp for exp in explosions if exp.life > 0]
-        key_lst = pg.key.get_pressed()
-        bird.update(key_lst, screen)
+        bombs = [bomb for bomb in bombs if bomb is not None] # 消えた爆弾を除外
+        explosions = [exp for exp in explosions if exp.life > 0] # 爆発が終わったもの除外
+        key_lst = pg.key.get_pressed() # 押されているキーを取得
+        bird.update(key_lst, screen) # 自機の位置更新
         new_beams = []
         for beam in beams:         
             if beam is not None and check_bound(beam.rct) == (True, True):
-                beam.update(screen)
+                beam.update(screen) # ビームの位置を更新
                 new_beams.append(beam)
-        beams = new_beams
+        beams = new_beams # 有効なビームだけを保持
 
         for exp in explosions:
-            exp.update(screen)
+            exp.update(screen) # 爆発エフェクトの更新
         
         for bomb in bombs:
-            bomb.update(screen)
-        score.update(screen)
-        pg.display.update()
-        tmr += 1
-        clock.tick(50)
+            bomb.update(screen) # 爆弾の位置を更新
+        score.update(screen) # スコア表示を更新
+        pg.display.update() # 画面を更新
+        tmr += 1 # 経過時間（フレーム数）をカウント
+        clock.tick(50) # フレームレート（50FPS）を維持
 
 
 if __name__ == "__main__":
