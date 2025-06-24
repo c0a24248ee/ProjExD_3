@@ -160,6 +160,24 @@ class Score:
     def increment(self, point = 1):
         self.score += point
 
+class Explosion:
+    def __init__(self, center: tuple[int, int]):
+        self.surfaces = [
+            pg.image.load("fig/explosion.gif").convert_alpha(),
+            pg.transform.flip(pg.image.load("fig/explosion.gif").convert_alpha(), True, False),
+        ]
+        self.index = 0
+        self.rct = self.surfaces[0].get_rect()
+        self.rct.center = center
+        self.life = 10  # 爆発の表示時間（フレーム数）
+
+    def update(self, screen: pg.Surface):
+        if self.life > 0:
+            # 爆発画像を交互に切り替え
+            self.index = (self.index + 1) % 2
+            screen.blit(self.surfaces[self.index], self.rct)
+            self.life -= 1
+
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))    
@@ -174,6 +192,7 @@ def main():
     #     bombs.append(Bomb((255, 0, 0), 10))
     bombs = [Bomb((255, 0, 0), 10) for _ in range(NUM_OF_BOMBS)] 
     beams = []  # 複数ビームに対応
+    explosions = [] #爆発エフェク用リスト
     clock = pg.time.Clock()
     tmr = 0
     while True:
@@ -201,22 +220,27 @@ def main():
         for beam in beams:
             for i, bomb in enumerate(bombs):
                 if bomb is not None and beam.rct.colliderect(bomb.rct):
+                    explosions.append(Explosion(bomb.rct.center))
                     beams[beams.index(beam)] = None
                     bombs[i] = None
                     bird.change_img(6, screen)
                     score.increment()
                     break
         bombs = [bomb for bomb in bombs if bomb is not None]
+        explosions = [exp for exp in explosions if exp.life > 0]
         key_lst = pg.key.get_pressed()
         bird.update(key_lst, screen)
         new_beams = []
-        for beam in beams:  
+        for beam in beams:         
             if beam is not None and check_bound(beam.rct) == (True, True):
                 beam.update(screen)
                 new_beams.append(beam)
         beams = new_beams
 
-        for  bomb in bombs: 
+        for exp in explosions:
+            exp.update(screen)
+        
+        for bomb in bombs:
             bomb.update(screen)
         score.update(screen)
         pg.display.update()
