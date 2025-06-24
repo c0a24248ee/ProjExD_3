@@ -1,3 +1,4 @@
+import math
 import os
 import random
 import sys
@@ -56,6 +57,7 @@ class Bird:
         self.img = __class__.imgs[(+5, 0)]
         self.rct: pg.Rect = self.img.get_rect()
         self.rct.center = xy
+        self.dire = (+5, 0) #初期の向き（左）
 
     def change_img(self, num: int, screen: pg.Surface):
         """
@@ -72,17 +74,18 @@ class Bird:
         引数1 key_lst：押下キーの真理値リスト
         引数2 screen：画面Surface
         """
-        sum_mv = [0, 0]
+        sum_mv = [0, 0] #各方向の合計移動（初期は静止）
         for k, mv in __class__.delta.items():
             if key_lst[k]:
                 sum_mv[0] += mv[0]
                 sum_mv[1] += mv[1]
-        self.rct.move_ip(sum_mv)
-        if check_bound(self.rct) != (True, True):
+        self.rct.move_ip(sum_mv) #移動実行
+        if check_bound(self.rct) != (True, True): #画面外なら戻す
             self.rct.move_ip(-sum_mv[0], -sum_mv[1])
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
-            self.img = __class__.imgs[tuple(sum_mv)]
-        screen.blit(self.img, self.rct)
+            self.dire = tuple(sum_mv) #向きを更新
+            self.img = __class__.imgs[self.dire] #向きに応じた画像に変更
+        screen.blit(self.img, self.rct) #描画
 
 
 class Beam:
@@ -94,19 +97,29 @@ class Beam:
         ビーム画像Surfaceを生成する
         引数 bird：ビームを放つこうかとん（Birdインスタンス）
         """
-        self.img = pg.image.load("fig/beam.png")
+        self.img0 = pg.image.load("fig/beam.png")
+        self.vx, self.vy = bird.dire  # 向きに応じた速度
+
+        # ビームの向きに応じて回転
+        angle_rad = math.atan2(-self.vy, self.vx)  # -vyにするのがPygameの座標系
+        angle_deg = math.degrees(angle_rad)
+        self.img = pg.transform.rotozoom(self.img0, angle_deg, 1.0)
+
         self.rct = self.img.get_rect()
-        self.rct.centery = bird.rct.centery
-        self.rct.left = bird.rct.right
-        self.vx, self.vy = +5, 0
+
+        # 向きに応じて初期位置調整
+        bw, bh = bird.rct.width, bird.rct.height
+        bx, by = bird.rct.center
+        self.rct.centerx = bx + bw * self.vx / 5
+        self.rct.centery = by + bh * self.vy / 5
 
     def update(self, screen: pg.Surface):
         """
         ビームを速度ベクトルself.vx, self.vyに基づき移動させる
         引数 screen：画面Surface
         """
+        self.rct.move_ip(self.vx, self.vy)
         if check_bound(self.rct) == (True, True):
-            self.rct.move_ip(self.vx, self.vy)
             screen.blit(self.img, self.rct)    
 
 
@@ -145,6 +158,11 @@ class Score:
     スコアに関するクラス
     """
     def __init__(self):
+        """
+        スコア表示用のフォント・色・初期スコアの設定
+        引数：なし
+        戻り値：なし
+        """
         self.fonto = pg.font.SysFont("hgp創英角ﾎﾟｯﾌﾟ体", 30)
         self.color = (0, 0, 255)
         self.score = 0
@@ -153,6 +171,9 @@ class Score:
 
     def update(self, screen:pg.Surface):
         """
+        現在のスコアを表示
+        引数screen：画面Surface
+        戻り値：なし
         """
         self.img = self.fonto.render(f"スコア:{self.score}", True, self.color)
         screen.blit(self.img, self.rct)
@@ -161,7 +182,15 @@ class Score:
         self.score += point
 
 class Explosion:
+    """
+    爆発エフェクトに関するクラス
+    """
     def __init__(self, center: tuple[int, int]):
+        """
+        引数に基づき爆発エフェクトを生成する関数
+        引数center：爆発エフェクトの中心座標タプル
+        戻り値：なし
+        """
         self.surfaces = [
             pg.image.load("fig/explosion.gif").convert_alpha(),
             pg.transform.flip(pg.image.load("fig/explosion.gif").convert_alpha(), True, False),
@@ -172,6 +201,11 @@ class Explosion:
         self.life = 10  # 爆発の表示時間（フレーム数）
 
     def update(self, screen: pg.Surface):
+        """
+        爆発エフェクトを画面に描画する関数
+        引数screen：画面Surface
+        戻り値：なし
+        """
         if self.life > 0:
             # 爆発画像を交互に切り替え
             self.index = (self.index + 1) % 2
